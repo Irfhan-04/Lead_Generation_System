@@ -1,0 +1,51 @@
+name,title,company,location,company_hq,email,linkedin,recent_publication,publication_year,publication_title,company_funding,uses_3d_models,tenure_months,propensity_score,rank
+Dr. Andrew Miller,Safety Pharmacology Lead,Novartis,"Cambridge, MA","Cambridge, MA",andrew.miller@novartis.com,linkedin.com/in/andrewmiller,True,2024.0,Microphysiological systems for toxicity prediction,Series B,False,38,100,1
+Dr. Amanda Chen,Head of Preclinical Safety,Eli Lilly,"Basel, Switzerland","Basel, Switzerland",amanda.chen@elililly.com,linkedin.com/in/amandachen,True,2023.0,Microphysiological systems for toxicity prediction,Series B,True,20,100,1
+Dr. Andrew Rodriguez,Director of Safety Sciences,Biogen,"Oxford, UK","Oxford, UK",andrew.rodriguez@biogen.com,linkedin.com/in/andrewrodriguez,True,2023.0,Microphysiological systems for toxicity prediction,Series C,False,11,96,3
+Dr. Amanda Smith,VP Safety Assessment,GSK,"New York, NY","New York, NY",amanda.smith@gsk.com,linkedin.com/in/amandasmith,True,2024.0,NAMs for hepatotoxicity screening,Series C,False,56,92,4
+Dr. Amanda Davis,Lead Toxicologist,BMS,"Cambridge, MA","Cambridge, MA",amanda.davis@bms.com,linkedin.com/in/amandadavis,True,2024.0,NAMs for hepatotoxicity screening,Series C,True,60,91,5
+Dr. Karen Miller,Director of Toxicology,Roche,"San Diego, CA","San Diego, CA",karen.miller@roche.com,linkedin.com/in/karenmiller,True,2023.0,Organ-on-chip technology in drug development,Series B,False,42,88,6
+Dr. Matthew Brown,Group Leader - DMPK,Eli Lilly,New Jersey,New Jersey,matthew.brown@elililly.com,linkedin.com/in/matthewbrown,True,2023.0,Liver organoid applications in drug discovery,Series B,False,6,87,7
+Dr. James Martinez,Principal Investigator,Eli Lilly,"Oxford, UK","Oxford, UK",james.martinez@elililly.com,linkedin.com/in/jamesmartinez,True,2024.0,Advanced in vitro toxicity testing methods,Series B,True,27,87,7
+Dr. Christopher Park,Group Leader - DMPK,Eli Lilly,"South San Francisco, CA","South San Francisco, CA",christopher.park@elililly.com,linkedin.com/in/christopherpark,True,2023.0,Novel 3D hepatic models for DILI assessment,Series B,False,37,87,7
+Dr. Sarah Miller,Head of Preclinical Safety,Ginkgo Bioworks,"Basel, Switzerland","Basel, Switzerland",sarah.miller@ginkgobioworks.com,linkedin.com/in/sarahmiller,True,2022.0,Novel 3D hepatic models for DILI assessment,Series C,False,12,80,10
+Dr. Michael Miller,Associate Director,GSK,"San Diego, CA","San Diego, CA",michael.miller@gsk.com,linkedin.com/in/michaelmiller,True,2024.0,Organ-on-chip technology in drug development,Series A,False,17,79,11
+Dr. Karen Park,Principal Scientist,Takeda,"Philadelphia, PA","Philadelphia, PA",karen.park@takeda.com,linkedin.com/in/karenpark,True,2024.0,Drug-induced liver injury prediction using spheroids,Public,False,11,79,11
+Dr. Christopher Mitchell,VP Safety Assessment,Alnylam Pharmaceuticals,"Basel, Switzerland","Basel, Switzerland",christopher.mitchell@alnylampharma.com,linkedin.com/in/christophermitchell,True,2022.0,Novel 3D hepatic models for DILI assessment,Public,True,15,76,13
+Dr. Jessica Anderson,Safety Pharmacology Lead,Novartis,New Jersey,New Jersey,jessica.anderson@novartis.com,linkedin.com/in/jessicaanderson,True,2022.0,3D cell culture models in safety pharmacology,Series C,True,59,76,13
+Dr. Susan Miller,Director of Safety Sciences,Intellia Therapeutics,Remote - Colorado,Remote - Colorado,susan.miller@intelliatherape.com,linkedin.com/in/susanmiller,True,2023.0,High-throughput screening using 3D models,Private,True,12,76,13
+Dr. Maria Davis,Head of Preclinical Safety,Amgen,"Cambridge, UK","Cambridge, UK",maria.davis@amgen.com,linkedin.com/in/mariadavis,True,2022.0,Liver organoid applications in drug discovery,Series B,True,6,76,13
+Dr. Lisa Lee,Lead Toxicologist,J&J,Remote - Texas,Remote - Texas,lisa.lee@j&j.com,linkedin.com/in/lisalee,True,2023.0,Predictive toxicology with advanced in vitro systems,Series C,False,35,75,17
+Dr. Maria Davis,Staff Scientist,Eli Lilly,"Cambridge, UK","Cambridge, UK",maria.davis@elililly.com,linkedin.com/in/mariadavis,True,2023.0,Liver organoid applications in drug discovery,Series C,False,28,72,18
+Dr. Amanda Johnson,Senior Research Associate,Amgen,"San Diego, CA","San Diego, CA",amanda.johnson@amgen.com,linkedin.com/in/amandajohnson,True,2024.0,Novel 3D hepatic models for DILI assessment,Series B,False,44,72,18
+Dr. David Garcia,Associate Director,Vertex Pharmaceuticals,"Basel, Switzerland","Basel, Switzerland",david.garcia@vertexpharma.com,linkedin.com/in/davidgarcia,True,2022.0,Advanced in vitro toxicity testing methods,Series B,False,52,71,20
+Dr. Michelle Taylor,Research Scientist II,Amgen,"Seattle, WA","Seattle, WA",michelle.taylor@amgen.com,linkedin.com/in/michelletaylor,True,2024.0,Advanced in vitro toxicity testing methods,Public,False,49,68,21
+Dr. Emily Mitchell,Staff Scientist,Amgen,"South San Francisco, CA","South San Francisco, CA",emily.mitchell@amgen.com,linkedin.com/in/emilymitchell,True,2023.0,Liver organoid applications in drug discovery,Public,False,35,68,21
+Dr. Susan Jones,Principal Investigator,Alexion Pharmaceuticals,"South San Francisco, CA","South San Francisco, CA",susan.jones@alexionpharma.com,linkedin.com/in/susanjones,True,2022.0,Novel 3D hepatic models for DILI assessment,Series C,False,19,67,23
+Dr. Karen Johnson,Director of Toxicology,Beam Therapeutics,"San Francisco, CA","San Francisco, CA",karen.johnson@beamtherapeutic.com,linkedin.com/in/karenjohnson,False,,,Series C,True,14,60,24
+Dr. Jessica Chen,VP Safety Assessment,Beam Therapeutics,"Seattle, WA","Seattle, WA",jessica.chen@beamtherapeutic.com,linkedin.com/in/jessicachen,False,,,Series B,False,33,60,24
+Dr. Daniel Wilson,Principal Investigator,Biogen,"New York, NY","New York, NY",daniel.wilson@biogen.com,linkedin.com/in/danielwilson,True,2022.0,High-throughput screening using 3D models,Public,False,46,59,26
+Dr. Lisa Smith,Director of Safety Sciences,GSK,"Cambridge, UK","Cambridge, UK",lisa.smith@gsk.com,linkedin.com/in/lisasmith,False,,,Public,True,29,56,27
+Dr. Maria Anderson,Senior Scientist - Hepatotoxicity,Editas Medicine,"Boston, MA","Boston, MA",maria.anderson@editasmedicine.com,linkedin.com/in/mariaanderson,True,2022.0,Liver organoid applications in drug discovery,Series C,False,29,56,27
+Dr. Amanda Wilson,Head of Preclinical Safety,AbbVie,"London, UK","London, UK",amanda.wilson@abbvie.com,linkedin.com/in/amandawilson,False,,,Public,False,27,56,27
+Dr. Karen Martinez,VP Safety Assessment,J&J,Remote - Colorado,Remote - Colorado,karen.martinez@j&j.com,linkedin.com/in/karenmartinez,False,,,Series B,True,60,56,27
+Dr. David Smith,Lead Toxicologist,Pfizer,"Boston, MA","Boston, MA",david.smith@pfizer.com,linkedin.com/in/davidsmith,False,,,Series B,True,19,55,31
+Dr. Maria Davis,Group Leader - DMPK,CRISPR Therapeutics,"San Francisco, CA","San Francisco, CA",maria.davis@crisprtherapeut.com,linkedin.com/in/mariadavis,True,2022.0,High-throughput screening using 3D models,Seed,False,43,55,31
+Dr. Emily Johnson,Principal Investigator,Alnylam Pharmaceuticals,"Basel, Switzerland","Basel, Switzerland",emily.johnson@alnylampharma.com,linkedin.com/in/emilyjohnson,False,,,Series C,True,7,55,31
+Dr. James Garcia,Staff Scientist,Vertex Pharmaceuticals,"Cambridge, UK","Cambridge, UK",james.garcia@vertexpharma.com,linkedin.com/in/jamesgarcia,True,2022.0,High-throughput screening using 3D models,Series C,True,12,52,34
+Dr. Amanda Anderson,Senior Scientist - Hepatotoxicity,Ginkgo Bioworks,"London, UK","London, UK",amanda.anderson@ginkgobioworks.com,linkedin.com/in/amandaanderson,True,2022.0,Organ-on-chip technology in drug development,Series C,True,18,52,34
+Dr. Susan Kumar,VP Safety Assessment,Alnylam Pharmaceuticals,Remote - Texas,Remote - Texas,susan.kumar@alnylampharma.com,linkedin.com/in/susankumar,False,,,Public,True,47,52,34
+Dr. Daniel Smith,Principal Scientist,Roche,New Jersey,New Jersey,daniel.smith@roche.com,linkedin.com/in/danielsmith,False,,,Series C,True,42,51,37
+Dr. Thomas Williams,Group Leader - DMPK,Sanofi,"San Francisco, CA","San Francisco, CA",thomas.williams@sanofi.com,linkedin.com/in/thomaswilliams,False,,,Series C,False,35,51,37
+Dr. Michelle Anderson,Lead Toxicologist,AbbVie,"Cambridge, MA","Cambridge, MA",michelle.anderson@abbvie.com,linkedin.com/in/michelleanderson,False,,,Public,False,51,51,37
+Dr. Jennifer Kumar,Principal Scientist,Merck,"Philadelphia, PA","Philadelphia, PA",jennifer.kumar@merck.com,linkedin.com/in/jenniferkumar,False,,,Series A,False,18,47,40
+Dr. Jennifer Martinez,Group Leader - DMPK,Takeda,"San Francisco, CA","San Francisco, CA",jennifer.martinez@takeda.com,linkedin.com/in/jennifermartinez,False,,,Public,False,41,47,40
+Dr. Maria Davis,Principal Scientist,J&J,"Oxford, UK","Oxford, UK",maria.davis@j&j.com,linkedin.com/in/mariadavis,False,,,Public,True,37,47,40
+Dr. Lisa Chen,Associate Director,Alexion Pharmaceuticals,"Chicago, IL","Chicago, IL",lisa.chen@alexionpharma.com,linkedin.com/in/lisachen,False,,,Series B,True,51,47,40
+Dr. Susan Mitchell,Principal Scientist,BioMarin Pharmaceutical,"Oxford, UK","Oxford, UK",susan.mitchell@biomarinpharmac.com,linkedin.com/in/susanmitchell,False,,,Public,True,43,47,40
+Dr. Michelle Miller,Principal Investigator,Biogen,Remote - Colorado,Remote - Colorado,michelle.miller@biogen.com,linkedin.com/in/michellemiller,False,,,Series C,True,31,47,40
+Dr. Andrew Smith,Research Scientist II,Sanofi,"Oxford, UK","Oxford, UK",andrew.smith@sanofi.com,linkedin.com/in/andrewsmith,True,2022.0,Liver organoid applications in drug discovery,Private,False,60,36,46
+Dr. Jessica Jones,Senior Scientist - Hepatotoxicity,Merck,Remote - Texas,Remote - Texas,jessica.jones@merck.com,linkedin.com/in/jessicajones,False,,,Series C,True,50,32,47
+Dr. Susan Martinez,Staff Scientist,Roche,"London, UK","London, UK",susan.martinez@roche.com,linkedin.com/in/susanmartinez,False,,,Public,False,8,32,47
+Dr. Daniel Rodriguez,Senior Research Associate,Vertex Pharmaceuticals,"Chicago, IL","Chicago, IL",daniel.rodriguez@vertexpharma.com,linkedin.com/in/danielrodriguez,False,,,Public,False,30,28,49
+Dr. Karen Davis,Staff Scientist,Roche,"Seattle, WA","Seattle, WA",karen.davis@roche.com,linkedin.com/in/karendavis,False,,,Seed,True,31,24,50
