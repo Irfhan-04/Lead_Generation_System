@@ -1,0 +1,7 @@
+pandas
+numpy
+python-dotenv
+gspread
+oauth2client
+openai
+biopython

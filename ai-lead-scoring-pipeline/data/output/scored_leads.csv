@@ -1,0 +1,4 @@
+name,title,company,person_location,company_hq,research_area,last_publication_year,funding_stage,propensity_score,score_breakdown
+Dr. Alice Morgan,director of toxicology,BioGenix,Boston,Boston,Hepatic Toxicity,2024,Series B,100,"{'role_fit': 30, 'scientific_intent': 40, 'funding': 20, 'location': 10, 'scientific_intent_ai': 0}"
+Dr. Maria Rossi,head of safety assessment,EuroBioTech,Basel,Basel,3D Cell Models,2022,Series C,75,"{'role_fit': 30, 'scientific_intent': 20, 'funding': 15, 'location': 10, 'scientific_intent_ai': 0}"
+Dr. John Lee,senior scientist,NeoPharma,San Diego,San Diego,Drug Metabolism,2023,Series A,40,"{'role_fit': 0, 'scientific_intent': 20, 'funding': 20, 'location': 0, 'scientific_intent_ai': 0}"
