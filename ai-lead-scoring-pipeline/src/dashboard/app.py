@@ -13,16 +13,34 @@ GOOGLE_SHEET_CSV_URL = (
 
 @st.cache_data
 def load_data():
-    return pd.read_csv(GOOGLE_SHEET_CSV_URL)
+    df = pd.read_csv(GOOGLE_SHEET_CSV_URL)
+
+    # 🔒 Normalize column names (CRITICAL)
+    df.columns = (
+        df.columns
+          .str.strip()
+          .str.lower()
+          .str.replace(" ", "_")
+    )
+
+    return df
 
 df = load_data()
+
+# 🛑 Schema validation
+required_columns = {"name", "propensity_score"}
+missing = required_columns - set(df.columns)
+
+if missing:
+    st.error(f"Missing required columns: {missing}")
+    st.stop()
 
 st.title("AI Lead Scoring Dashboard")
 
 st.markdown(
     """
-    Ranked biotech/pharma leads based on:
-    role fit, scientific intent, funding readiness, and location signals.
+    Ranked biotech/pharma leads based on role fit,
+    scientific intent, funding readiness, and location signals.
     """
 )
 
@@ -40,12 +58,15 @@ filtered_df = df[df["propensity_score"] >= min_score]
 st.subheader("Ranked Leads")
 
 display_columns = [
-    "name",
-    "title",
-    "company",
-    "person_location",
-    "company_hq",
-    "propensity_score"
+    col for col in [
+        "name",
+        "title",
+        "company",
+        "person_location",
+        "company_hq",
+        "propensity_score"
+    ]
+    if col in df.columns
 ]
 
 st.dataframe(
@@ -56,13 +77,14 @@ st.dataframe(
 
 st.subheader("Score Breakdown")
 
-selected_name = st.selectbox(
-    "Select a lead",
-    filtered_df["name"].unique()
-)
+if "score_breakdown" in df.columns:
+    selected_name = st.selectbox(
+        "Select a lead",
+        filtered_df["name"].unique()
+    )
 
-selected_row = filtered_df[
-    filtered_df["name"] == selected_name
-].iloc[0]
+    selected_row = filtered_df[
+        filtered_df["name"] == selected_name
+    ].iloc[0]
 
-st.json(selected_row["score_breakdown"])
+    st.json(selected_row["score_breakdown"])
