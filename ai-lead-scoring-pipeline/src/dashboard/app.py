@@ -6,20 +6,25 @@ st.set_page_config(
     layout="wide"
 )
 
+# 👉 PASTE YOUR GOOGLE SHEET CSV EXPORT LINK HERE
+GOOGLE_SHEET_CSV_URL = (https://docs.google.com/spreadsheets/d/1DmddsH39He3GXLs31ty-kTQznLH9t3fUb3VkqAlhSPg/export?format=csv)
+
 @st.cache_data
 def load_data():
-    return pd.read_csv("data/output/scored_leads.csv")
+    return pd.read_csv(GOOGLE_SHEET_CSV_URL)
 
 df = load_data()
 
 st.title("AI Lead Scoring Dashboard")
+
 st.markdown(
     """
-    This dashboard displays ranked biotech/pharma leads based on
+    Ranked biotech/pharma leads based on:
     role fit, scientific intent, funding readiness, and location signals.
     """
 )
 
+# Sidebar filter
 st.sidebar.header("Filters")
 
 min_score = st.sidebar.slider(
@@ -31,6 +36,7 @@ min_score = st.sidebar.slider(
 
 filtered_df = df[df["propensity_score"] >= min_score]
 
+# Main table
 st.subheader("Ranked Leads")
 
 display_columns = [
@@ -48,13 +54,16 @@ st.dataframe(
     use_container_width=True
 )
 
-st.subheader("Score Breakdown (Per Lead)")
+# Score breakdown
+st.subheader("Score Breakdown")
 
 selected_name = st.selectbox(
-    "Select a lead to inspect",
+    "Select a lead",
     filtered_df["name"].unique()
 )
 
-selected_row = filtered_df[filtered_df["name"] == selected_name].iloc[0]
+selected_row = filtered_df[
+    filtered_df["name"] == selected_name
+].iloc[0]
 
 st.json(selected_row["score_breakdown"])
