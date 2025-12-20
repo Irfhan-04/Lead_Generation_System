@@ -8,14 +8,13 @@ st.set_page_config(
 
 GOOGLE_SHEET_CSV_URL = (
     "https://docs.google.com/spreadsheets/d/"
-    "1DmddsH39He3GXLs31ty-kTQznLH9t3fUb3VkqAlhSPg/export?format=csv"
+    "1uFhqrL8Qs0pz6UUO6Fcs04I1DmqOsDunxe9JpGrQx2g/export?format=csv"
 )
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_data():
     df = pd.read_csv(GOOGLE_SHEET_CSV_URL)
 
-    # 🔒 Normalize column names (CRITICAL)
     df.columns = (
         df.columns
           .str.strip()
