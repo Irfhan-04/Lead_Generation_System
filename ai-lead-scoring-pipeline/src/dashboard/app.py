@@ -6,8 +6,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# 👉 PASTE YOUR GOOGLE SHEET CSV EXPORT LINK HERE
-GOOGLE_SHEET_CSV_URL = (https://docs.google.com/spreadsheets/d/1DmddsH39He3GXLs31ty-kTQznLH9t3fUb3VkqAlhSPg/export?format=csv)
+GOOGLE_SHEET_CSV_URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "1DmddsH39He3GXLs31ty-kTQznLH9t3fUb3VkqAlhSPg/export?format=csv"
+)
 
 @st.cache_data
 def load_data():
@@ -24,7 +26,6 @@ st.markdown(
     """
 )
 
-# Sidebar filter
 st.sidebar.header("Filters")
 
 min_score = st.sidebar.slider(
@@ -36,7 +37,6 @@ min_score = st.sidebar.slider(
 
 filtered_df = df[df["propensity_score"] >= min_score]
 
-# Main table
 st.subheader("Ranked Leads")
 
 display_columns = [
@@ -54,7 +54,6 @@ st.dataframe(
     use_container_width=True
 )
 
-# Score breakdown
 st.subheader("Score Breakdown")
 
 selected_name = st.selectbox(
