@@ -32,9 +32,9 @@ data/processed/*
 .DS_Store
 Thumbs.db
 
+# Streamlit
+.streamlit/secrets.toml
+
 # Logs
 *.log
 logs/
-
-# Streamlit
-.streamlit/secrets.toml
