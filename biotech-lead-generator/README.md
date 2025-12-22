@@ -629,28 +629,6 @@ score = scorer.calculate_score(lead)
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! This project is actively maintained.
-
-### How to Contribute
-
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/AmazingFeature
-   ```
-3. **Make your changes**
-4. **Commit with clear messages**
-   ```bash
-   git commit -m 'Add AmazingFeature: description'
-   ```
-5. **Push to your branch**
-   ```bash
-   git push origin feature/AmazingFeature
-   ```
-6. **Open a Pull Request**
-
 ### Development Setup
 
 ```bash
@@ -824,8 +802,5 @@ A: Absolutely! Adjust weights in the UI or modify `propensity_scorer.py` for cus
 - Rotate API keys regularly
 - Use HTTPS in production
 - Implement authentication for multi-user deployments
----
 
-**Version:** 1.0.0  
-**Last Updated:** December 2024  
-**Status:** Active Development
+---
