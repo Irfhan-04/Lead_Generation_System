@@ -1,6 +1,9 @@
 """
 Biotech Lead Generation System - Main Application
 3D In-Vitro Models Lead Scoring Platform
+
+Purpose: Automated lead generation and propensity scoring for biotech/pharma
+         professionals most likely to adopt 3D in-vitro toxicology models.
 """
 
 import streamlit as st
