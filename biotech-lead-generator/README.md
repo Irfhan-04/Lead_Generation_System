@@ -57,13 +57,13 @@ This automated system:
 ## 🚀 Demo
 
 ### Live Application
-🔗 **Streamlit App**: [https://YOUR-APP.streamlit.app]([https://YOUR-APP.streamlit.app](https://leadgenerationsystem-vkyz4vssnk4mmwdm7tytr9.streamlit.app)
+🔗 **Streamlit App**: https://leadgenerationsystem-vkyz4vssnk4mmwdm7tytr9.streamlit.app
 
 ### Output Data
-📊 **Google Sheets**: [View 200+ Scored Leads]([https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID](https://docs.google.com/spreadsheets/d/1MhaO7-NPyqkllQpHvSa8ZMYYumBmvFwLUIyolrtvusQ/edit?usp=sharing)
+📊 **Google Sheets**: https://docs.google.com/spreadsheets/d/1MhaO7-NPyqkllQpHvSa8ZMYYumBmvFwLUIyolrtvusQ/edit?usp=sharing
 
 ### Repository
-💻 **GitHub**: [https://github.com/YOUR_USERNAME/biotech-lead-generator]([https://github.com/YOUR_USERNAME/biotech-lead-generator](https://github.com/Irfhan-04/Lead_Generation_System.git)
+💻 **GitHub**: https://github.com/Irfhan-04/Lead_Generation_System/tree/main/biotech-lead-generator
 
 ---
 
