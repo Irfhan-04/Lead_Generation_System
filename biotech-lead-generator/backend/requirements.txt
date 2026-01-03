@@ -24,7 +24,6 @@ upstash-redis==0.15.0
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
 bcrypt==4.1.2
 
 # Background Tasks
