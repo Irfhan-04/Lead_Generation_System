@@ -30,8 +30,8 @@ bcrypt==4.1.2
 celery==5.3.6
 celery[redis]==5.3.6
 
-# HTTP Client
-httpx==0.26.0
+# HTTP Client - FIXED: Changed from 0.26.0 to 0.25.2 for supabase compatibility
+httpx==0.25.2
 aiohttp==3.9.1
 
 # Data Processing
@@ -79,4 +79,3 @@ xlsxwriter==3.1.9
 pytest==7.4.4
 pytest-asyncio==0.23.3
 pytest-cov==4.1.0
-httpx==0.26.0  # For testing
