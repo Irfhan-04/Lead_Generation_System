@@ -1,6 +1,4 @@
-# ============================================
 # requirements.txt - Production Dependencies
-# ============================================
 
 # FastAPI and Server
 fastapi==0.109.0
@@ -14,7 +12,7 @@ sqlalchemy==2.0.25
 alembic==1.13.1
 asyncpg==0.29.0  # Async PostgreSQL driver
 psycopg2-binary==2.9.9  # Sync PostgreSQL driver
-supabase==2.3.4  # Supabase client
+supabase==2.6.0  # ⬅ upgraded for httpx 0.26 compatibility
 
 # Redis & Caching
 redis==5.0.1
@@ -27,11 +25,10 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.1.2
 
 # Background Tasks
-celery==5.3.6
 celery[redis]==5.3.6
 
-# HTTP Client - FIXED: Changed from 0.26.0 to 0.25.2 for supabase compatibility
-httpx==0.25.2
+# HTTP Client
+httpx==0.26.0
 aiohttp==3.9.1
 
 # Data Processing
@@ -73,7 +70,7 @@ openpyxl==3.1.2
 xlsxwriter==3.1.9
 
 # Storage - Supabase Storage (FREE 1GB)
-# Already included above: supabase==2.3.4
+# Already included above: supabase==2.6.0
 
 # Testing (optional in production, but good to have)
 pytest==7.4.4
