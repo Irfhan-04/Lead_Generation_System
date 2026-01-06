@@ -31,7 +31,16 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Override sqlalchemy.url with our config
-config.set_main_option("sqlalchemy.url", get_database_url())
+# FIX: Force IPv4 by modifying the connection string
+database_url = get_database_url()
+
+# Convert to psycopg2 format and add connection arguments
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+elif database_url.startswith("postgresql+asyncpg://"):
+    database_url = database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+
+config.set_main_option("sqlalchemy.url", database_url)
 
 
 def run_migrations_offline() -> None:
@@ -63,10 +72,23 @@ def run_migrations_online() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
+    # FIX: Add connection arguments to force IPv4 and improve reliability
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = config.get_main_option("sqlalchemy.url")
+    
+    # Add connection pool settings
+    if "sqlalchemy.pool_pre_ping" not in configuration:
+        configuration["sqlalchemy.pool_pre_ping"] = "True"
+    
+    # Create engine with custom connect_args
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={
+            "connect_timeout": 10,
+            "options": "-c timezone=utc",
+        }
     )
 
     with connectable.connect() as connection:

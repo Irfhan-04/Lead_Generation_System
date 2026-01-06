@@ -20,7 +20,7 @@ Base = declarative_base()
 # SYNC DATABASE (for Alembic migrations and simple operations)
 # ============================================================================
 
-# Create sync engine
+# Create sync engine with improved connection handling
 sync_engine = create_engine(
     get_database_url(),
     pool_size=settings.DATABASE_POOL_SIZE,
@@ -28,6 +28,13 @@ sync_engine = create_engine(
     pool_timeout=settings.DATABASE_POOL_TIMEOUT,
     pool_pre_ping=True,  # Verify connections before using
     echo=settings.DEBUG,  # Log SQL queries in debug mode
+    connect_args={
+        "connect_timeout": 10,  # 10 second timeout
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+    }
 )
 
 # Create sync session factory
@@ -59,11 +66,18 @@ def get_db() -> Generator[Session, None, None]:
 # ASYNC DATABASE (for FastAPI async endpoints - RECOMMENDED)
 # ============================================================================
 
-# Create async engine
-# Note: NullPool doesn't accept pool_size, max_overflow, pool_timeout
+# Create async engine with improved connection handling
 engine_kwargs = {
     "pool_pre_ping": True,
     "echo": settings.DEBUG,
+    "connect_args": {
+        "timeout": 10,
+        "command_timeout": 10,
+        "server_settings": {
+            "application_name": "biotech_lead_generator",
+            "timezone": "UTC",
+        }
+    }
 }
 
 # Only add pooling params if not using NullPool
