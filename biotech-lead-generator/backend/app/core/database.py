@@ -60,15 +60,25 @@ def get_db() -> Generator[Session, None, None]:
 # ============================================================================
 
 # Create async engine
+# Note: NullPool doesn't accept pool_size, max_overflow, pool_timeout
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "echo": settings.DEBUG,
+}
+
+# Only add pooling params if not using NullPool
+if settings.DEBUG:
+    engine_kwargs["poolclass"] = NullPool
+else:
+    engine_kwargs.update({
+        "pool_size": settings.DATABASE_POOL_SIZE,
+        "max_overflow": settings.DATABASE_MAX_OVERFLOW,
+        "pool_timeout": settings.DATABASE_POOL_TIMEOUT,
+    })
+
 async_engine = create_async_engine(
     get_async_database_url(),
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_timeout=settings.DATABASE_POOL_TIMEOUT,
-    pool_pre_ping=True,
-    echo=settings.DEBUG,
-    # For production, use NullPool with connection pooling at app level
-    poolclass=NullPool if settings.DEBUG else None,
+    **engine_kwargs
 )
 
 # Create async session factory
