@@ -11,6 +11,24 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+# Load .env file if it exists (before any config imports)
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        print(f"✅ Loaded .env from {env_path}")
+    else:
+        # Try parent directory
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
+        if os.path.exists(env_path):
+            load_dotenv(env_path)
+            print(f"✅ Loaded .env from {env_path}")
+except ImportError:
+    print("⚠️  python-dotenv not installed, skipping .env load")
+except Exception as e:
+    print(f"⚠️  Could not load .env: {e}")
+
 # Import config and models
 from app.core.config import settings, get_database_url
 from app.core.database import Base, SYNC_CONNECT_ARGS
