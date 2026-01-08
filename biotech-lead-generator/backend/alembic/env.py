@@ -11,6 +11,24 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+# Load .env file if it exists (before any config imports)
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        print(f"[OK] Loaded .env from {env_path}")
+    else:
+        # Try parent directory
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
+        if os.path.exists(env_path):
+            load_dotenv(env_path)
+            print(f"[OK] Loaded .env from {env_path}")
+except ImportError:
+    print("[WARN] python-dotenv not installed, skipping .env load")
+except Exception as e:
+    print(f"[WARN] Could not load .env: {e}")
+
 # Import config and models
 from app.core.config import settings, get_database_url
 from app.core.database import Base, SYNC_CONNECT_ARGS
@@ -42,7 +60,7 @@ if parsed.hostname and not parsed.hostname.replace('.', '').isdigit():
     # Check for manual IPv4 override via environment variable
     ipv4_override = os.getenv("DATABASE_IPV4_ADDRESS")
     if ipv4_override:
-        print(f"✅ Using IPv4 address from DATABASE_IPV4_ADDRESS: {ipv4_override}")
+        print(f"[OK] Using IPv4 address from DATABASE_IPV4_ADDRESS: {ipv4_override}")
         ipv4_address = ipv4_override
     else:
         # Try to resolve to IPv4 using multiple methods
@@ -58,9 +76,9 @@ if parsed.hostname and not parsed.hostname.replace('.', '').isdigit():
             )
             if addr_info:
                 ipv4_address = addr_info[0][4][0]
-                print(f"✅ Resolved {parsed.hostname} to IPv4: {ipv4_address}")
+                print(f"[OK] Resolved {parsed.hostname} to IPv4: {ipv4_address}")
         except Exception as e:
-            print(f"⚠️  Method 1 failed: {e}")
+            print(f"[WARN] Method 1 failed: {e}")
         
         # Method 2: Try gethostbyname (legacy, but sometimes works)
         if not ipv4_address:
@@ -68,9 +86,9 @@ if parsed.hostname and not parsed.hostname.replace('.', '').isdigit():
                 ipv4_address = socket.gethostbyname(parsed.hostname)
                 # Verify it's actually IPv4
                 socket.inet_aton(ipv4_address)
-                print(f"✅ Resolved {parsed.hostname} to IPv4 (method 2): {ipv4_address}")
+                print(f"[OK] Resolved {parsed.hostname} to IPv4 (method 2): {ipv4_address}")
             except Exception as e:
-                print(f"⚠️  Method 2 failed: {e}")
+                print(f"[WARN] Method 2 failed: {e}")
     
     # If we got an IPv4 address, update the URL
     if ipv4_address:
@@ -86,9 +104,9 @@ if parsed.hostname and not parsed.hostname.replace('.', '').isdigit():
             parsed.fragment
         ))
     else:
-        print(f"⚠️  Could not resolve {parsed.hostname} to IPv4")
-        print(f"⚠️  Will try using hostname directly (may use IPv6 if available)")
-        print(f"\n💡 Alternative Solutions:")
+        print(f"[WARN] Could not resolve {parsed.hostname} to IPv4")
+        print(f"[WARN] Will try using hostname directly (may use IPv6 if available)")
+        print(f"\n[TIP] Alternative Solutions:")
         print(f"   1. Use Supabase Connection Pooler (better IPv4 support):")
         print(f"      Change hostname from 'db.xxx.supabase.co' to 'aws-0-xx.pooler.supabase.com'")
         print(f"   2. Use Supabase Direct Connection with IPv4:")
@@ -97,7 +115,7 @@ if parsed.hostname and not parsed.hostname.replace('.', '').isdigit():
         print(f"   4. Use a different network environment")
 
 config.set_main_option("sqlalchemy.url", database_url)
-print(f"🔗 Using database URL: {database_url.split('@')[0]}@...")
+print(f"[INFO] Using database URL: {database_url.split('@')[0]}@...")
 
 
 def run_migrations_offline() -> None:
@@ -145,42 +163,44 @@ def run_migrations_online() -> None:
         connect_args=SYNC_CONNECT_ARGS,
     )
 
-    # Test connection before running migrations
-    print("🧪 Testing database connection...")
+    # Test connection before running migrations (non-fatal for autogenerate)
+    print("[INFO] Testing database connection...")
+    connection_ok = False
     try:
         with connectable.connect() as test_conn:
             result = test_conn.execute(text("SELECT 1"))
             result.fetchone()
-            print("✅ Database connection successful!")
+            print("[OK] Database connection successful!")
+            connection_ok = True
     except Exception as e:
         error_msg = str(e)
-        print(f"❌ Database connection failed: {error_msg}")
+        print(f"[WARN] Database connection test failed: {error_msg}")
         
         # Check if it's an IPv6/network issue
         if "Network is unreachable" in error_msg or "2406:" in error_msg or "IPv6" in error_msg:
-            print("\n🔴 IPv6 Connection Issue Detected!")
+            print("\n[WARN] IPv6 Connection Issue Detected!")
             print("=" * 60)
             print("Your network environment doesn't support IPv6 connections.")
-            print("\n💡 Solutions:")
+            print("\n[TIP] Solutions:")
             print("1. Use a VPN that supports IPv6")
             print("2. Contact your network administrator to enable IPv6")
             print("3. Use Supabase connection pooling (different endpoint)")
             print("4. Try using the Supabase direct connection URL")
-            print("\n📝 To get IPv4 connection string from Supabase:")
+            print("\n[INFO] To get IPv4 connection string from Supabase:")
             print("   - Go to Supabase Dashboard > Settings > Database")
             print("   - Look for 'Connection string' with 'Direct connection'")
             print("   - Or use the 'Connection pooling' option")
             print("=" * 60)
         else:
-            print("\n🔧 General Troubleshooting:")
+            print("\n[TIP] General Troubleshooting:")
             print("1. Check your DATABASE_URL in .env")
             print("2. Verify Supabase project is active")
             print("3. Check network connectivity")
             print("4. Run: python scripts/test_db_direct.py")
         
-        # For autogenerate, we can still try to proceed in offline mode
-        # But for now, we'll raise the error
-        raise
+        # For autogenerate, we'll try to proceed anyway
+        # The actual migration will fail if connection doesn't work
+        print("\n[INFO] Continuing with migration attempt (connection will be retried)...")
 
     # Run migrations
     with connectable.connect() as connection:
