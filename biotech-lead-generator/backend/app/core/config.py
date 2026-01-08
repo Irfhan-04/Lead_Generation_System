@@ -26,10 +26,10 @@ def get_ipv4_address(hostname: str) -> str:
         )
         if addr_info:
             ipv4_address = addr_info[0][4][0]
-            print(f"✅ Resolved {hostname} to IPv4: {ipv4_address}")
+            print(f"[OK] Resolved {hostname} to IPv4: {ipv4_address}")
             return ipv4_address
     except Exception as e:
-        print(f"⚠️  Could not resolve {hostname} to IPv4: {e}")
+        print(f"[WARN] Could not resolve {hostname} to IPv4: {e}")
     
     return hostname
 
