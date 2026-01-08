@@ -21,6 +21,22 @@ from app.core.security import get_password_hash
 from sqlalchemy import select
 
 
+async def cleanup_existing_test_user(session):
+    """
+    Clean up any existing test user before starting tests
+    """
+    result = await session.execute(
+        select(User).where(User.email == "test@example.com")
+    )
+    existing_user = result.scalar_one_or_none()
+    
+    if existing_user:
+        print("   ℹ️  Found existing test user, cleaning up...")
+        await session.delete(existing_user)
+        await session.commit()
+        print("   ✅ Cleanup complete!")
+
+
 async def test_database_models():
     """
     Test all 5 database models
@@ -39,6 +55,9 @@ async def test_database_models():
     # Create async session
     async with AsyncSessionLocal() as session:
         try:
+            # Cleanup any existing test data first
+            await cleanup_existing_test_user(session)
+            
             # Test 2: User Model
             print("\n2️⃣  Testing User Model...")
             test_user = User(
