@@ -211,12 +211,6 @@ class Pipeline(Base):
         """
         self.status = PipelineStatus.DISABLED
     
-    def mark_running(self):
-        """
-        Mark pipeline as currently running
-        """
-        self.status = PipelineStatus.RUNNING
-    
     def mark_run_complete(
         self,
         success: bool,
@@ -231,11 +225,22 @@ class Pipeline(Base):
             results: Results dictionary
             next_run_at: When to run next (optional)
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
         
-        self.last_run_at = datetime.utcnow()
+        self.last_run_at = datetime.now(timezone.utc)
         self.last_run_status = "success" if success else "failed"
         self.last_run_results = results
+        
+        # Initialize counters if None
+        if self.run_count is None:
+            self.run_count = 0
+        if self.success_count is None:
+            self.success_count = 0
+        if self.error_count is None:
+            self.error_count = 0
+        if self.total_leads_generated is None:
+            self.total_leads_generated = 0
+        
         self.run_count += 1
         
         if success:
@@ -257,12 +262,12 @@ class Pipeline(Base):
         """
         Calculate when pipeline should run next based on schedule
         """
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         
         if self.schedule == PipelineSchedule.MANUAL:
             return None
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         if self.schedule == PipelineSchedule.DAILY:
             return now + timedelta(days=1)
@@ -290,8 +295,8 @@ class Pipeline(Base):
         if self.next_run_at is None:
             return True
         
-        from datetime import datetime
-        return datetime.utcnow() >= self.next_run_at
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc) >= self.next_run_at
     
     def get_success_rate(self) -> float:
         """

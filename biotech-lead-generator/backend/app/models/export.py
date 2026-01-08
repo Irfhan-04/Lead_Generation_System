@@ -153,8 +153,8 @@ class Export(Base):
         self.completed_at = func.now()
         
         # Set expiration (7 days from now)
-        from datetime import datetime, timedelta
-        self.expires_at = datetime.utcnow() + timedelta(days=7)
+        from datetime import datetime, timedelta, timezone
+        self.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     
     def mark_as_failed(self, error_message: str):
         """
@@ -168,10 +168,10 @@ class Export(Base):
         """
         Track download
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
         
         if self.downloaded_at is None:
-            self.downloaded_at = datetime.utcnow()
+            self.downloaded_at = datetime.now(timezone.utc)
         
         self.download_count += 1
     
@@ -182,8 +182,8 @@ class Export(Base):
         if self.expires_at is None:
             return False
         
-        from datetime import datetime
-        return datetime.utcnow() > self.expires_at
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc) > self.expires_at
     
     def is_downloadable(self) -> bool:
         """
