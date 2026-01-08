@@ -211,6 +211,12 @@ class Pipeline(Base):
         """
         self.status = PipelineStatus.DISABLED
     
+    def mark_running(self):
+        """
+        Mark pipeline as currently running
+        """
+        self.status = PipelineStatus.RUNNING
+
     def mark_run_complete(
         self,
         success: bool,

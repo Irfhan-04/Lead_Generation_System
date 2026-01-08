@@ -19,7 +19,7 @@ from app.models.export import Export, ExportFormat, ExportStatus
 from app.models.pipeline import Pipeline, PipelineStatus, PipelineSchedule
 from app.core.security import get_password_hash
 from sqlalchemy import select
-
+from sqlalchemy.orm import selectinload
 
 async def cleanup_existing_test_user(session):
     """
@@ -204,13 +204,23 @@ async def test_database_models():
             
             # Test 7: Relationships
             print("\n7️⃣  Testing Relationships...")
-            
-            # Query user with relationships
+
+            # Import selectinload for eager loading
+            from sqlalchemy.orm import selectinload
+
+            # Query user with relationships eagerly loaded
             result = await session.execute(
-                select(User).where(User.id == test_user.id)
+                select(User)
+                .where(User.id == test_user.id)
+                .options(
+                    selectinload(User.leads),
+                    selectinload(User.searches),
+                    selectinload(User.exports),
+                    selectinload(User.pipelines)
+                )
             )
             user_with_relations = result.scalar_one()
-            
+
             print(f"   ✅ User relationships:")
             print(f"      Leads: {len(user_with_relations.leads)} lead(s)")
             print(f"      Searches: {len(user_with_relations.searches)} search(es)")
