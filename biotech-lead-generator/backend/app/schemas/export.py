@@ -1,14 +1,21 @@
-'''
+"""
 Export Schemas
-'''
+"""
+
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any, List
+from datetime import datetime
+from uuid import UUID
+
+from app.schemas.base import TimestampSchema
 from app.models.export import ExportFormat, ExportStatus
 
 
 class ExportCreate(BaseModel):
     """Create export request"""
     format: ExportFormat = Field(..., description="Export format")
-    filters: Dict[str, Any] = Field(default={}, description="Filters to apply")
-    columns: List[str] = Field(default=[], description="Columns to include (empty = all)")
+    filters: Dict[str, Any] = Field(default_factory=dict, description="Filters to apply")
+    columns: List[str] = Field(default_factory=list, description="Columns to include (empty = all)")
     
     model_config = {
         "json_schema_extra": {
@@ -21,7 +28,7 @@ class ExportCreate(BaseModel):
     }
 
 
-class ExportResponse(BaseSchema, TimestampSchema):
+class ExportResponse(TimestampSchema):
     """Export response"""
     id: UUID
     file_name: str

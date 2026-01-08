@@ -79,10 +79,7 @@ from app.schemas.pipeline import (
     PipelineRunRequest,
 )
 
-# Search, Export, Pipeline schemas
-# Note: Import these from the file we just created
-# In practice, you'd split them into separate files
-
+# Export all
 __all__ = [
     # Base
     "BaseSchema",
@@ -128,11 +125,6 @@ __all__ = [
     "LeadQuery",
     "LeadBulkCreate",
     "LeadScoreUpdate",
-]
-
-
-# Export all
-__all__ = [
     # Search
     "SearchCreate",
     "SearchResponse",

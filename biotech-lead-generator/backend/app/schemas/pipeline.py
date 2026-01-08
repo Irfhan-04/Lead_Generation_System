@@ -1,6 +1,13 @@
-'''
+"""
 Pipeline Schemas
-'''
+"""
+
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any
+from datetime import datetime
+from uuid import UUID
+
+from app.schemas.base import TimestampSchema
 from app.models.pipeline import PipelineStatus, PipelineSchedule
 
 
@@ -41,7 +48,7 @@ class PipelineUpdate(BaseModel):
     status: Optional[PipelineStatus] = None
 
 
-class PipelineResponse(BaseSchema, TimestampSchema):
+class PipelineResponse(TimestampSchema):
     """Pipeline response"""
     id: UUID
     name: str

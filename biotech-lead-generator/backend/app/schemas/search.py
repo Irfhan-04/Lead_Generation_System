@@ -6,14 +6,14 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
-from app.schemas.base import BaseSchema, TimestampSchema
+from app.schemas.base import TimestampSchema
 
 
 class SearchCreate(BaseModel):
     """Create new search"""
     query: str = Field(..., min_length=1, description="Search query")
     search_type: str = Field(..., description="pubmed, linkedin, conference, etc.")
-    filters: Dict[str, Any] = Field(default={}, description="Applied filters")
+    filters: Dict[str, Any] = Field(default_factory=dict, description="Applied filters")
     save_search: bool = Field(default=False, description="Save this search")
     saved_name: Optional[str] = Field(None, max_length=255, description="Name for saved search")
     
@@ -30,7 +30,7 @@ class SearchCreate(BaseModel):
     }
 
 
-class SearchResponse(BaseSchema, TimestampSchema):
+class SearchResponse(TimestampSchema):
     """Search response"""
     id: UUID
     query: str

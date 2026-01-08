@@ -39,9 +39,9 @@ class LeadCreate(BaseModel):
     company_size: Optional[str] = Field(None, max_length=50, description="Company size")
     uses_3d_models: bool = Field(default=False, description="Uses 3D in-vitro models")
     
-    tags: List[str] = Field(default=[], description="Custom tags")
+    tags: List[str] = Field(default_factory=list, description="Custom tags")
     notes: Optional[str] = Field(None, description="Internal notes")
-    custom_fields: Dict[str, Any] = Field(default={}, description="Custom fields")
+    custom_fields: Dict[str, Any] = Field(default_factory=dict, description="Custom fields")
     
     @field_validator('name', 'title', 'company')
     @classmethod
@@ -179,10 +179,21 @@ class LeadBase(BaseSchema):
     }
 
 
-class LeadDetail(LeadBase, TimestampSchema):
+class LeadDetail(TimestampSchema):
     """
     Detailed lead information
     """
+    id: UUID
+    name: str
+    title: Optional[str] = None
+    company: Optional[str] = None
+    location: Optional[str] = None
+    email: Optional[str] = None
+    propensity_score: Optional[int] = None
+    rank: Optional[int] = None
+    priority_tier: Optional[str] = None
+    status: str
+    
     company_hq: Optional[str] = None
     phone: Optional[str] = None
     linkedin_url: Optional[str] = None
