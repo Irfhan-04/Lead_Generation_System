@@ -1,5 +1,5 @@
 """
-Lead Management Endpoints
+Lead Management Endpoints - FIXED ASYNC VERSION
 CRUD operations for leads with scoring
 """
 
@@ -70,23 +70,6 @@ async def list_leads(
 ):
     """
     List user's leads with pagination, filtering, and sorting
-    
-    **Pagination:**
-    - page: Page number (starts at 1)
-    - size: Items per page (max 100)
-    
-    **Sorting:**
-    - sort_by: Field to sort by (propensity_score, created_at, name, etc.)
-    - sort_order: asc or desc
-    
-    **Filters:**
-    - search: Search text in name, title, company
-    - min_score / max_score: Score range
-    - priority_tier: HIGH, MEDIUM, or LOW
-    - status: Lead status
-    - location: Filter by location
-    - has_email: Only leads with email
-    - has_publication: Only leads with publications
     """
     
     # Build base query
@@ -145,8 +128,20 @@ async def list_leads(
     result = await db.execute(query)
     leads = result.scalars().all()
     
-    # Convert to list schema
-    lead_list = [LeadList.model_validate(lead) for lead in leads]
+    # Convert to list schema (accessing attributes here in async context)
+    lead_list = []
+    for lead in leads:
+        lead_list.append(LeadList(
+            id=lead.id,
+            name=lead.name,
+            title=lead.title,
+            company=lead.company,
+            email=lead.email,
+            propensity_score=lead.propensity_score,
+            priority_tier=lead.priority_tier,
+            tags=lead.tags or [],
+            created_at=lead.created_at
+        ))
     
     # Return paginated response
     return PaginatedResponse.create(
@@ -172,15 +167,10 @@ async def create_lead(
     lead_data: LeadCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(check_lead_quota)  # Check quota
+    _: None = Depends(check_lead_quota)
 ):
     """
-    Create new lead
-    
-    Automatically:
-    - Calculates propensity score
-    - Determines priority tier
-    - Assigns rank (relative to other leads)
+    Create new lead with automatic scoring
     """
     
     # Check for duplicate email
@@ -226,7 +216,42 @@ async def create_lead(
     current_user.increment_usage("leads_created_this_month")
     await db.commit()
     
-    return lead
+    # IMPORTANT: Access all attributes while in async context
+    # Convert to dict to avoid lazy loading issues
+    lead_dict = {
+        "id": lead.id,
+        "name": lead.name,
+        "title": lead.title,
+        "company": lead.company,
+        "location": lead.location,
+        "email": lead.email,
+        "propensity_score": lead.propensity_score,
+        "rank": lead.rank,
+        "priority_tier": lead.priority_tier,
+        "status": lead.status,
+        "company_hq": lead.company_hq,
+        "phone": lead.phone,
+        "linkedin_url": lead.linkedin_url,
+        "twitter_url": lead.twitter_url,
+        "website": lead.website,
+        "recent_publication": lead.recent_publication,
+        "publication_year": lead.publication_year,
+        "publication_title": lead.publication_title,
+        "publication_count": lead.publication_count,
+        "company_funding": lead.company_funding,
+        "company_size": lead.company_size,
+        "uses_3d_models": lead.uses_3d_models,
+        "data_sources": lead.data_sources or [],
+        "enrichment_data": lead.enrichment_data or {},
+        "custom_fields": lead.custom_fields or {},
+        "tags": lead.tags or [],
+        "notes": lead.notes,
+        "last_contacted_at": lead.last_contacted_at,
+        "created_at": lead.created_at,
+        "updated_at": lead.updated_at
+    }
+    
+    return LeadDetail(**lead_dict)
 
 
 # ============================================================================
@@ -246,16 +271,8 @@ async def get_lead(
 ):
     """
     Get lead details
-    
-    Returns complete lead information including:
-    - Contact details
-    - Publication info
-    - Enrichment data
-    - Custom fields
-    - Tags and notes
     """
     
-    # Query lead
     result = await db.execute(
         select(Lead).where(
             and_(
@@ -272,7 +289,41 @@ async def get_lead(
             detail="Lead not found"
         )
     
-    return lead
+    # Convert to dict in async context
+    lead_dict = {
+        "id": lead.id,
+        "name": lead.name,
+        "title": lead.title,
+        "company": lead.company,
+        "location": lead.location,
+        "email": lead.email,
+        "propensity_score": lead.propensity_score,
+        "rank": lead.rank,
+        "priority_tier": lead.priority_tier,
+        "status": lead.status,
+        "company_hq": lead.company_hq,
+        "phone": lead.phone,
+        "linkedin_url": lead.linkedin_url,
+        "twitter_url": lead.twitter_url,
+        "website": lead.website,
+        "recent_publication": lead.recent_publication,
+        "publication_year": lead.publication_year,
+        "publication_title": lead.publication_title,
+        "publication_count": lead.publication_count,
+        "company_funding": lead.company_funding,
+        "company_size": lead.company_size,
+        "uses_3d_models": lead.uses_3d_models,
+        "data_sources": lead.data_sources or [],
+        "enrichment_data": lead.enrichment_data or {},
+        "custom_fields": lead.custom_fields or {},
+        "tags": lead.tags or [],
+        "notes": lead.notes,
+        "last_contacted_at": lead.last_contacted_at,
+        "created_at": lead.created_at,
+        "updated_at": lead.updated_at
+    }
+    
+    return LeadDetail(**lead_dict)
 
 
 # ============================================================================
@@ -293,12 +344,8 @@ async def update_lead(
 ):
     """
     Update lead
-    
-    Can update any lead field.
-    Score is NOT automatically recalculated - use the recalculate endpoint.
     """
     
-    # Get lead
     result = await db.execute(
         select(Lead).where(
             and_(
@@ -315,16 +362,49 @@ async def update_lead(
             detail="Lead not found"
         )
     
-    # Update fields (only non-None values)
+    # Update fields
     update_data = lead_updates.model_dump(exclude_none=True)
-    
     for field, value in update_data.items():
         setattr(lead, field, value)
     
     await db.commit()
     await db.refresh(lead)
     
-    return lead
+    # Convert to dict in async context
+    lead_dict = {
+        "id": lead.id,
+        "name": lead.name,
+        "title": lead.title,
+        "company": lead.company,
+        "location": lead.location,
+        "email": lead.email,
+        "propensity_score": lead.propensity_score,
+        "rank": lead.rank,
+        "priority_tier": lead.priority_tier,
+        "status": lead.status,
+        "company_hq": lead.company_hq,
+        "phone": lead.phone,
+        "linkedin_url": lead.linkedin_url,
+        "twitter_url": lead.twitter_url,
+        "website": lead.website,
+        "recent_publication": lead.recent_publication,
+        "publication_year": lead.publication_year,
+        "publication_title": lead.publication_title,
+        "publication_count": lead.publication_count,
+        "company_funding": lead.company_funding,
+        "company_size": lead.company_size,
+        "uses_3d_models": lead.uses_3d_models,
+        "data_sources": lead.data_sources or [],
+        "enrichment_data": lead.enrichment_data or {},
+        "custom_fields": lead.custom_fields or {},
+        "tags": lead.tags or [],
+        "notes": lead.notes,
+        "last_contacted_at": lead.last_contacted_at,
+        "created_at": lead.created_at,
+        "updated_at": lead.updated_at
+    }
+    
+    return LeadDetail(**lead_dict)
 
 
 # ============================================================================
@@ -344,12 +424,8 @@ async def delete_lead(
 ):
     """
     Delete lead
-    
-    Permanently removes the lead.
-    This action cannot be undone.
     """
     
-    # Get lead
     result = await db.execute(
         select(Lead).where(
             and_(
@@ -392,9 +468,6 @@ async def bulk_delete_leads(
 ):
     """
     Bulk delete leads
-    
-    Deletes multiple leads by ID.
-    Max 100 leads per request.
     """
     
     success_count = 0
@@ -457,11 +530,6 @@ async def bulk_create_leads(
 ):
     """
     Bulk create leads
-    
-    Creates multiple leads at once.
-    - Automatically calculates scores if requested
-    - Can skip duplicates
-    - Max 100 leads per request
     """
     
     success_count = 0
@@ -544,12 +612,8 @@ async def recalculate_score(
 ):
     """
     Recalculate lead score
-    
-    Uses the current scoring algorithm and lead data
-    to recalculate the propensity score.
     """
     
-    # Get lead
     result = await db.execute(
         select(Lead).where(
             and_(
@@ -577,7 +641,41 @@ async def recalculate_score(
     # Update ranks
     await update_lead_ranks(current_user.id, db)
     
-    return lead
+    # Convert to dict in async context
+    lead_dict = {
+        "id": lead.id,
+        "name": lead.name,
+        "title": lead.title,
+        "company": lead.company,
+        "location": lead.location,
+        "email": lead.email,
+        "propensity_score": lead.propensity_score,
+        "rank": lead.rank,
+        "priority_tier": lead.priority_tier,
+        "status": lead.status,
+        "company_hq": lead.company_hq,
+        "phone": lead.phone,
+        "linkedin_url": lead.linkedin_url,
+        "twitter_url": lead.twitter_url,
+        "website": lead.website,
+        "recent_publication": lead.recent_publication,
+        "publication_year": lead.publication_year,
+        "publication_title": lead.publication_title,
+        "publication_count": lead.publication_count,
+        "company_funding": lead.company_funding,
+        "company_size": lead.company_size,
+        "uses_3d_models": lead.uses_3d_models,
+        "data_sources": lead.data_sources or [],
+        "enrichment_data": lead.enrichment_data or {},
+        "custom_fields": lead.custom_fields or {},
+        "tags": lead.tags or [],
+        "notes": lead.notes,
+        "last_contacted_at": lead.last_contacted_at,
+        "created_at": lead.created_at,
+        "updated_at": lead.updated_at
+    }
+    
+    return LeadDetail(**lead_dict)
 
 
 @router.post(
@@ -592,14 +690,8 @@ async def recalculate_all_scores(
 ):
     """
     Recalculate all lead scores
-    
-    Useful when:
-    - Scoring algorithm has changed
-    - Scoring weights have been updated
-    - Need to refresh all scores
     """
     
-    # Get all user's leads
     result = await db.execute(
         select(Lead).where(Lead.user_id == current_user.id)
     )
