@@ -1,6 +1,6 @@
 """
-Lead Management Endpoints - FIXED ASYNC VERSION
-CRUD operations for leads with scoring
+Lead Management Endpoints - FIXED VERSION
+Properly handles async operations and lazy loading
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -36,7 +36,50 @@ router = APIRouter()
 
 
 # ============================================================================
-# LIST LEADS (with pagination, filtering, sorting)
+# HELPER: Convert Lead to Dict (prevents lazy loading issues)
+# ============================================================================
+
+def lead_to_dict(lead: Lead) -> dict:
+    """
+    Convert Lead model to dictionary
+    Must be called within async context while lead is attached to session
+    """
+    return {
+        "id": lead.id,
+        "name": lead.name,
+        "title": lead.title,
+        "company": lead.company,
+        "location": lead.location,
+        "email": lead.email,
+        "propensity_score": lead.propensity_score,
+        "rank": lead.rank,
+        "priority_tier": lead.priority_tier,
+        "status": lead.status,
+        "company_hq": lead.company_hq,
+        "phone": lead.phone,
+        "linkedin_url": lead.linkedin_url,
+        "twitter_url": lead.twitter_url,
+        "website": lead.website,
+        "recent_publication": lead.recent_publication,
+        "publication_year": lead.publication_year,
+        "publication_title": lead.publication_title,
+        "publication_count": lead.publication_count,
+        "company_funding": lead.company_funding,
+        "company_size": lead.company_size,
+        "uses_3d_models": lead.uses_3d_models,
+        "data_sources": lead.data_sources or [],
+        "enrichment_data": lead.enrichment_data or {},
+        "custom_fields": lead.custom_fields or {},
+        "tags": lead.tags or [],
+        "notes": lead.notes,
+        "last_contacted_at": lead.last_contacted_at,
+        "created_at": lead.created_at,
+        "updated_at": lead.updated_at
+    }
+
+
+# ============================================================================
+# LIST LEADS
 # ============================================================================
 
 @router.get(
@@ -46,15 +89,10 @@ router = APIRouter()
     description="Get paginated list of leads with filtering and sorting"
 )
 async def list_leads(
-    # Pagination
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(50, ge=1, le=100, description="Items per page"),
-    
-    # Sorting
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
-    
-    # Filters
     search: Optional[str] = Query(None, description="Search in name, title, company"),
     min_score: Optional[int] = Query(None, ge=0, le=100),
     max_score: Optional[int] = Query(None, ge=0, le=100),
@@ -63,14 +101,10 @@ async def list_leads(
     location: Optional[str] = Query(None),
     has_email: Optional[bool] = Query(None),
     has_publication: Optional[bool] = Query(None),
-    
-    # Dependencies
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    List user's leads with pagination, filtering, and sorting
-    """
+    """List user's leads with pagination, filtering, and sorting"""
     
     # Build base query
     query = select(Lead).where(Lead.user_id == current_user.id)
@@ -128,10 +162,9 @@ async def list_leads(
     result = await db.execute(query)
     leads = result.scalars().all()
     
-    # Convert to list schema (accessing attributes here in async context)
-    lead_list = []
-    for lead in leads:
-        lead_list.append(LeadList(
+    # Convert to list schema
+    lead_list = [
+        LeadList(
             id=lead.id,
             name=lead.name,
             title=lead.title,
@@ -141,9 +174,10 @@ async def list_leads(
             priority_tier=lead.priority_tier,
             tags=lead.tags or [],
             created_at=lead.created_at
-        ))
+        )
+        for lead in leads
+    ]
     
-    # Return paginated response
     return PaginatedResponse.create(
         items=lead_list,
         page=page,
@@ -169,9 +203,7 @@ async def create_lead(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(check_lead_quota)
 ):
-    """
-    Create new lead with automatic scoring
-    """
+    """Create new lead with automatic scoring"""
     
     # Check for duplicate email
     if lead_data.email:
@@ -216,40 +248,8 @@ async def create_lead(
     current_user.increment_usage("leads_created_this_month")
     await db.commit()
     
-    # IMPORTANT: Access all attributes while in async context
-    # Convert to dict to avoid lazy loading issues
-    lead_dict = {
-        "id": lead.id,
-        "name": lead.name,
-        "title": lead.title,
-        "company": lead.company,
-        "location": lead.location,
-        "email": lead.email,
-        "propensity_score": lead.propensity_score,
-        "rank": lead.rank,
-        "priority_tier": lead.priority_tier,
-        "status": lead.status,
-        "company_hq": lead.company_hq,
-        "phone": lead.phone,
-        "linkedin_url": lead.linkedin_url,
-        "twitter_url": lead.twitter_url,
-        "website": lead.website,
-        "recent_publication": lead.recent_publication,
-        "publication_year": lead.publication_year,
-        "publication_title": lead.publication_title,
-        "publication_count": lead.publication_count,
-        "company_funding": lead.company_funding,
-        "company_size": lead.company_size,
-        "uses_3d_models": lead.uses_3d_models,
-        "data_sources": lead.data_sources or [],
-        "enrichment_data": lead.enrichment_data or {},
-        "custom_fields": lead.custom_fields or {},
-        "tags": lead.tags or [],
-        "notes": lead.notes,
-        "last_contacted_at": lead.last_contacted_at,
-        "created_at": lead.created_at,
-        "updated_at": lead.updated_at
-    }
+    # Convert to dict in async context
+    lead_dict = lead_to_dict(lead)
     
     return LeadDetail(**lead_dict)
 
@@ -269,9 +269,7 @@ async def get_lead(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get lead details
-    """
+    """Get lead details"""
     
     result = await db.execute(
         select(Lead).where(
@@ -289,40 +287,7 @@ async def get_lead(
             detail="Lead not found"
         )
     
-    # Convert to dict in async context
-    lead_dict = {
-        "id": lead.id,
-        "name": lead.name,
-        "title": lead.title,
-        "company": lead.company,
-        "location": lead.location,
-        "email": lead.email,
-        "propensity_score": lead.propensity_score,
-        "rank": lead.rank,
-        "priority_tier": lead.priority_tier,
-        "status": lead.status,
-        "company_hq": lead.company_hq,
-        "phone": lead.phone,
-        "linkedin_url": lead.linkedin_url,
-        "twitter_url": lead.twitter_url,
-        "website": lead.website,
-        "recent_publication": lead.recent_publication,
-        "publication_year": lead.publication_year,
-        "publication_title": lead.publication_title,
-        "publication_count": lead.publication_count,
-        "company_funding": lead.company_funding,
-        "company_size": lead.company_size,
-        "uses_3d_models": lead.uses_3d_models,
-        "data_sources": lead.data_sources or [],
-        "enrichment_data": lead.enrichment_data or {},
-        "custom_fields": lead.custom_fields or {},
-        "tags": lead.tags or [],
-        "notes": lead.notes,
-        "last_contacted_at": lead.last_contacted_at,
-        "created_at": lead.created_at,
-        "updated_at": lead.updated_at
-    }
-    
+    lead_dict = lead_to_dict(lead)
     return LeadDetail(**lead_dict)
 
 
@@ -342,9 +307,7 @@ async def update_lead(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update lead
-    """
+    """Update lead"""
     
     result = await db.execute(
         select(Lead).where(
@@ -370,40 +333,7 @@ async def update_lead(
     await db.commit()
     await db.refresh(lead)
     
-    # Convert to dict in async context
-    lead_dict = {
-        "id": lead.id,
-        "name": lead.name,
-        "title": lead.title,
-        "company": lead.company,
-        "location": lead.location,
-        "email": lead.email,
-        "propensity_score": lead.propensity_score,
-        "rank": lead.rank,
-        "priority_tier": lead.priority_tier,
-        "status": lead.status,
-        "company_hq": lead.company_hq,
-        "phone": lead.phone,
-        "linkedin_url": lead.linkedin_url,
-        "twitter_url": lead.twitter_url,
-        "website": lead.website,
-        "recent_publication": lead.recent_publication,
-        "publication_year": lead.publication_year,
-        "publication_title": lead.publication_title,
-        "publication_count": lead.publication_count,
-        "company_funding": lead.company_funding,
-        "company_size": lead.company_size,
-        "uses_3d_models": lead.uses_3d_models,
-        "data_sources": lead.data_sources or [],
-        "enrichment_data": lead.enrichment_data or {},
-        "custom_fields": lead.custom_fields or {},
-        "tags": lead.tags or [],
-        "notes": lead.notes,
-        "last_contacted_at": lead.last_contacted_at,
-        "created_at": lead.created_at,
-        "updated_at": lead.updated_at
-    }
-    
+    lead_dict = lead_to_dict(lead)
     return LeadDetail(**lead_dict)
 
 
@@ -422,9 +352,7 @@ async def delete_lead(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Delete lead
-    """
+    """Delete lead"""
     
     result = await db.execute(
         select(Lead).where(
@@ -445,7 +373,6 @@ async def delete_lead(
     await db.delete(lead)
     await db.commit()
     
-    # Update ranks
     await update_lead_ranks(current_user.id, db)
     
     return MessageResponse(message="Lead deleted successfully")
@@ -466,9 +393,7 @@ async def bulk_delete_leads(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Bulk delete leads
-    """
+    """Bulk delete leads"""
     
     success_count = 0
     errors = []
@@ -500,8 +425,6 @@ async def bulk_delete_leads(
             })
     
     await db.commit()
-    
-    # Update ranks
     await update_lead_ranks(current_user.id, db)
     
     return BulkOperationResponse(
@@ -528,9 +451,7 @@ async def bulk_create_leads(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(check_lead_quota)
 ):
-    """
-    Bulk create leads
-    """
+    """Bulk create leads"""
     
     success_count = 0
     errors = []
@@ -610,9 +531,7 @@ async def recalculate_score(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Recalculate lead score
-    """
+    """Recalculate lead score"""
     
     result = await db.execute(
         select(Lead).where(
@@ -641,40 +560,7 @@ async def recalculate_score(
     # Update ranks
     await update_lead_ranks(current_user.id, db)
     
-    # Convert to dict in async context
-    lead_dict = {
-        "id": lead.id,
-        "name": lead.name,
-        "title": lead.title,
-        "company": lead.company,
-        "location": lead.location,
-        "email": lead.email,
-        "propensity_score": lead.propensity_score,
-        "rank": lead.rank,
-        "priority_tier": lead.priority_tier,
-        "status": lead.status,
-        "company_hq": lead.company_hq,
-        "phone": lead.phone,
-        "linkedin_url": lead.linkedin_url,
-        "twitter_url": lead.twitter_url,
-        "website": lead.website,
-        "recent_publication": lead.recent_publication,
-        "publication_year": lead.publication_year,
-        "publication_title": lead.publication_title,
-        "publication_count": lead.publication_count,
-        "company_funding": lead.company_funding,
-        "company_size": lead.company_size,
-        "uses_3d_models": lead.uses_3d_models,
-        "data_sources": lead.data_sources or [],
-        "enrichment_data": lead.enrichment_data or {},
-        "custom_fields": lead.custom_fields or {},
-        "tags": lead.tags or [],
-        "notes": lead.notes,
-        "last_contacted_at": lead.last_contacted_at,
-        "created_at": lead.created_at,
-        "updated_at": lead.updated_at
-    }
-    
+    lead_dict = lead_to_dict(lead)
     return LeadDetail(**lead_dict)
 
 
@@ -688,9 +574,7 @@ async def recalculate_all_scores(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Recalculate all lead scores
-    """
+    """Recalculate all lead scores"""
     
     result = await db.execute(
         select(Lead).where(Lead.user_id == current_user.id)
@@ -720,9 +604,7 @@ async def recalculate_all_scores(
 # ============================================================================
 
 async def update_lead_ranks(user_id: UUID, db: AsyncSession):
-    """
-    Update rank for all user's leads based on propensity_score
-    """
+    """Update rank for all user's leads based on propensity_score"""
     result = await db.execute(
         select(Lead)
         .where(Lead.user_id == user_id)
