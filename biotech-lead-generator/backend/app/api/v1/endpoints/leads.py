@@ -1,6 +1,24 @@
 """
-Lead Management Endpoints - FIXED VERSION
-Properly handles async operations without lazy loading issues
+COMPLETE FIX FOR MissingGreenlet ERROR
+
+This requires TWO file changes:
+
+1. Update app/api/v1/endpoints/leads.py
+2. Update app/schemas/lead.py
+
+The issue: Pydantic tries to access SQLAlchemy lazy-loaded attributes
+after the session closes, causing MissingGreenlet errors.
+
+Solution: Use model_validate() instead of direct instantiation,
+and ensure all data is eagerly loaded before schema validation.
+"""
+
+# ============================================================================
+# FILE 1: app/api/v1/endpoints/leads.py
+# ============================================================================
+
+"""
+Lead Management Endpoints - COMPLETE FIX
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -8,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime
 
 from app.core.deps import get_db, get_current_active_user, check_lead_quota
 from app.models.user import User
@@ -17,15 +36,12 @@ from app.schemas.lead import (
     LeadUpdate,
     LeadDetail,
     LeadList,
-    LeadFilters,
     LeadBulkCreate,
-    LeadScoreUpdate,
 )
 from app.schemas.base import (
     MessageResponse,
     SuccessResponse,
     PaginatedResponse,
-    PaginationParams,
     BulkOperationResponse,
     BulkDeleteRequest,
 )
@@ -33,6 +49,38 @@ from app.services.scoring_service import ScoringService
 
 
 router = APIRouter()
+
+
+# ============================================================================
+# HELPER: Eagerly load all Lead attributes
+# ============================================================================
+
+def prepare_lead_for_serialization(lead: Lead) -> None:
+    """
+    Force eager loading of all Lead attributes.
+    MUST be called while session is active.
+    
+    This prevents MissingGreenlet errors by accessing all attributes
+    before the session closes.
+    """
+    # Access all scalar attributes to force loading
+    _ = (
+        lead.id, lead.user_id, lead.name, lead.title, lead.company,
+        lead.location, lead.company_hq, lead.email, lead.phone,
+        lead.linkedin_url, lead.twitter_url, lead.website,
+        lead.propensity_score, lead.rank, lead.priority_tier,
+        lead.recent_publication, lead.publication_year,
+        lead.publication_title, lead.publication_count,
+        lead.company_funding, lead.company_size, lead.uses_3d_models,
+        lead.status, lead.notes, lead.last_contacted_at,
+        lead.created_at, lead.updated_at
+    )
+    
+    # Access JSONB fields to force loading
+    _ = lead.data_sources or []
+    _ = lead.enrichment_data or {}
+    _ = lead.custom_fields or {}
+    _ = lead.tags or []
 
 
 # ============================================================================
@@ -63,17 +111,16 @@ async def list_leads(
 ):
     """List user's leads with pagination, filtering, and sorting"""
     
-    # Build base query
+    # Build query
     query = select(Lead).where(Lead.user_id == current_user.id)
     
     # Apply filters
     if search:
-        search_filter = or_(
+        query = query.where(or_(
             Lead.name.ilike(f"%{search}%"),
             Lead.title.ilike(f"%{search}%"),
             Lead.company.ilike(f"%{search}%")
-        )
-        query = query.where(search_filter)
+        ))
     
     if min_score is not None:
         query = query.where(Lead.propensity_score >= min_score)
@@ -91,47 +138,31 @@ async def list_leads(
         query = query.where(Lead.location.ilike(f"%{location}%"))
     
     if has_email is not None:
-        if has_email:
-            query = query.where(Lead.email.isnot(None))
-        else:
-            query = query.where(Lead.email.is_(None))
+        query = query.where(Lead.email.isnot(None) if has_email else Lead.email.is_(None))
     
     if has_publication is not None:
         query = query.where(Lead.recent_publication == has_publication)
     
     # Get total count
     count_query = select(func.count()).select_from(query.subquery())
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = (await db.execute(count_query)).scalar()
     
-    # Apply sorting
+    # Apply sorting and pagination
     sort_column = getattr(Lead, sort_by, Lead.created_at)
-    if sort_order == "desc":
-        query = query.order_by(sort_column.desc())
-    else:
-        query = query.order_by(sort_column.asc())
+    query = query.order_by(sort_column.desc() if sort_order == "desc" else sort_column.asc())
+    query = query.offset((page - 1) * size).limit(size)
     
-    # Apply pagination
-    offset = (page - 1) * size
-    query = query.offset(offset).limit(size)
-    
-    # Execute query
+    # Execute and prepare results
     result = await db.execute(query)
     leads = result.scalars().all()
     
-    # Convert to list schema (simple, no relationships)
+    # Eagerly load all attributes
+    for lead in leads:
+        prepare_lead_for_serialization(lead)
+    
+    # Convert using model_validate
     lead_list = [
-        LeadList(
-            id=lead.id,
-            name=lead.name,
-            title=lead.title,
-            company=lead.company,
-            email=lead.email,
-            propensity_score=lead.propensity_score,
-            priority_tier=lead.priority_tier,
-            tags=lead.tags or [],
-            created_at=lead.created_at
-        )
+        LeadList.model_validate(lead, from_attributes=True)
         for lead in leads
     ]
     
@@ -164,49 +195,52 @@ async def create_lead(
     
     # Check for duplicate email
     if lead_data.email:
-        result = await db.execute(
+        existing = await db.execute(
             select(Lead).where(
-                and_(
-                    Lead.user_id == current_user.id,
-                    Lead.email == lead_data.email
-                )
+                and_(Lead.user_id == current_user.id, Lead.email == lead_data.email)
             )
         )
-        existing_lead = result.scalar_one_or_none()
-        
-        if existing_lead:
+        if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Lead with this email already exists"
             )
     
     # Create lead
-    lead = Lead(
-        user_id=current_user.id,
-        **lead_data.model_dump()
-    )
+    lead = Lead(user_id=current_user.id, **lead_data.model_dump())
     
-    # Calculate propensity score
+    # Calculate score
     scoring_service = ScoringService()
     lead.propensity_score = scoring_service.calculate_score(lead)
     lead.update_priority_tier()
-    
-    # Add data source
     lead.add_data_source("manual")
     
+    # Save to database
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
     
-    # Update ranks for all user's leads
+    # Store the lead ID for later
+    lead_id = lead.id
+    
+    # Update ranks (this does another commit)
     await update_lead_ranks(current_user.id, db)
     
-    # Increment usage counter
+    # Update usage
     current_user.increment_usage("leads_created_this_month")
     await db.commit()
     
-    # Return using Pydantic schema (no relationship access needed)
-    return LeadDetail.model_validate(lead)
+    # CRITICAL: Re-fetch the lead after all commits to get fresh data
+    result = await db.execute(
+        select(Lead).where(Lead.id == lead_id)
+    )
+    lead = result.scalar_one()
+    
+    # NOW eagerly load all attributes while session is active
+    prepare_lead_for_serialization(lead)
+    
+    # Convert to schema using model_validate
+    return LeadDetail.model_validate(lead, from_attributes=True)
 
 
 # ============================================================================
@@ -227,12 +261,7 @@ async def get_lead(
     """Get lead details"""
     
     result = await db.execute(
-        select(Lead).where(
-            and_(
-                Lead.id == lead_id,
-                Lead.user_id == current_user.id
-            )
-        )
+        select(Lead).where(and_(Lead.id == lead_id, Lead.user_id == current_user.id))
     )
     lead = result.scalar_one_or_none()
     
@@ -242,7 +271,10 @@ async def get_lead(
             detail="Lead not found"
         )
     
-    return LeadDetail.model_validate(lead)
+    # Eagerly load attributes
+    prepare_lead_for_serialization(lead)
+    
+    return LeadDetail.model_validate(lead, from_attributes=True)
 
 
 # ============================================================================
@@ -264,12 +296,7 @@ async def update_lead(
     """Update lead"""
     
     result = await db.execute(
-        select(Lead).where(
-            and_(
-                Lead.id == lead_id,
-                Lead.user_id == current_user.id
-            )
-        )
+        select(Lead).where(and_(Lead.id == lead_id, Lead.user_id == current_user.id))
     )
     lead = result.scalar_one_or_none()
     
@@ -280,14 +307,16 @@ async def update_lead(
         )
     
     # Update fields
-    update_data = lead_updates.model_dump(exclude_none=True)
-    for field, value in update_data.items():
+    for field, value in lead_updates.model_dump(exclude_none=True).items():
         setattr(lead, field, value)
     
     await db.commit()
     await db.refresh(lead)
     
-    return LeadDetail.model_validate(lead)
+    # Eagerly load attributes
+    prepare_lead_for_serialization(lead)
+    
+    return LeadDetail.model_validate(lead, from_attributes=True)
 
 
 # ============================================================================
@@ -297,8 +326,7 @@ async def update_lead(
 @router.delete(
     "/{lead_id}",
     response_model=MessageResponse,
-    summary="Delete lead",
-    description="Delete a lead"
+    summary="Delete lead"
 )
 async def delete_lead(
     lead_id: UUID,
@@ -308,39 +336,25 @@ async def delete_lead(
     """Delete lead"""
     
     result = await db.execute(
-        select(Lead).where(
-            and_(
-                Lead.id == lead_id,
-                Lead.user_id == current_user.id
-            )
-        )
+        select(Lead).where(and_(Lead.id == lead_id, Lead.user_id == current_user.id))
     )
     lead = result.scalar_one_or_none()
     
     if not lead:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Lead not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     
     await db.delete(lead)
     await db.commit()
-    
     await update_lead_ranks(current_user.id, db)
     
     return MessageResponse(message="Lead deleted successfully")
 
 
 # ============================================================================
-# BULK DELETE
+# BULK OPERATIONS
 # ============================================================================
 
-@router.post(
-    "/bulk/delete",
-    response_model=BulkOperationResponse,
-    summary="Bulk delete leads",
-    description="Delete multiple leads at once"
-)
+@router.post("/bulk/delete", response_model=BulkOperationResponse)
 async def bulk_delete_leads(
     request: BulkDeleteRequest,
     current_user: User = Depends(get_current_active_user),
@@ -354,12 +368,7 @@ async def bulk_delete_leads(
     for lead_id in request.ids:
         try:
             result = await db.execute(
-                select(Lead).where(
-                    and_(
-                        Lead.id == lead_id,
-                        Lead.user_id == current_user.id
-                    )
-                )
+                select(Lead).where(and_(Lead.id == lead_id, Lead.user_id == current_user.id))
             )
             lead = result.scalar_one_or_none()
             
@@ -367,15 +376,9 @@ async def bulk_delete_leads(
                 await db.delete(lead)
                 success_count += 1
             else:
-                errors.append({
-                    "id": str(lead_id),
-                    "error": "Lead not found"
-                })
+                errors.append({"id": str(lead_id), "error": "Not found"})
         except Exception as e:
-            errors.append({
-                "id": str(lead_id),
-                "error": str(e)
-            })
+            errors.append({"id": str(lead_id), "error": str(e)})
     
     await db.commit()
     await update_lead_ranks(current_user.id, db)
@@ -388,16 +391,7 @@ async def bulk_delete_leads(
     )
 
 
-# ============================================================================
-# BULK CREATE
-# ============================================================================
-
-@router.post(
-    "/bulk/create",
-    response_model=BulkOperationResponse,
-    summary="Bulk create leads",
-    description="Create multiple leads at once"
-)
+@router.post("/bulk/create", response_model=BulkOperationResponse)
 async def bulk_create_leads(
     request: LeadBulkCreate,
     current_user: User = Depends(get_current_active_user),
@@ -412,52 +406,35 @@ async def bulk_create_leads(
     
     for idx, lead_data in enumerate(request.leads):
         try:
-            # Check for duplicate
+            # Check duplicates
             if request.skip_duplicates and lead_data.email:
-                result = await db.execute(
+                existing = await db.execute(
                     select(Lead).where(
-                        and_(
-                            Lead.user_id == current_user.id,
-                            Lead.email == lead_data.email
-                        )
+                        and_(Lead.user_id == current_user.id, Lead.email == lead_data.email)
                     )
                 )
-                if result.scalar_one_or_none():
-                    errors.append({
-                        "row": idx + 1,
-                        "error": "Duplicate email"
-                    })
+                if existing.scalar_one_or_none():
+                    errors.append({"row": idx + 1, "error": "Duplicate"})
                     continue
             
             # Create lead
-            lead = Lead(
-                user_id=current_user.id,
-                **lead_data.model_dump()
-            )
+            lead = Lead(user_id=current_user.id, **lead_data.model_dump())
             
-            # Calculate score
             if scoring_service:
                 lead.propensity_score = scoring_service.calculate_score(lead)
                 lead.update_priority_tier()
             
             lead.add_data_source("bulk_import")
-            
             db.add(lead)
             success_count += 1
             
         except Exception as e:
-            errors.append({
-                "row": idx + 1,
-                "error": str(e)
-            })
+            errors.append({"row": idx + 1, "error": str(e)})
     
     await db.commit()
     
-    # Update ranks
     if success_count > 0:
         await update_lead_ranks(current_user.id, db)
-        
-        # Update usage
         current_user.increment_usage("leads_created_this_month", success_count)
         await db.commit()
     
@@ -470,15 +447,10 @@ async def bulk_create_leads(
 
 
 # ============================================================================
-# RECALCULATE SCORE
+# SCORING
 # ============================================================================
 
-@router.post(
-    "/{lead_id}/score",
-    response_model=LeadDetail,
-    summary="Recalculate lead score",
-    description="Recalculate lead's propensity score"
-)
+@router.post("/{lead_id}/score", response_model=LeadDetail)
 async def recalculate_score(
     lead_id: UUID,
     current_user: User = Depends(get_current_active_user),
@@ -487,22 +459,14 @@ async def recalculate_score(
     """Recalculate lead score"""
     
     result = await db.execute(
-        select(Lead).where(
-            and_(
-                Lead.id == lead_id,
-                Lead.user_id == current_user.id
-            )
-        )
+        select(Lead).where(and_(Lead.id == lead_id, Lead.user_id == current_user.id))
     )
     lead = result.scalar_one_or_none()
     
     if not lead:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Lead not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     
-    # Recalculate score
+    # Recalculate
     scoring_service = ScoringService()
     lead.propensity_score = scoring_service.calculate_score(lead)
     lead.update_priority_tier()
@@ -510,39 +474,30 @@ async def recalculate_score(
     await db.commit()
     await db.refresh(lead)
     
-    # Update ranks
+    # Eagerly load
+    prepare_lead_for_serialization(lead)
+    
     await update_lead_ranks(current_user.id, db)
     
-    return LeadDetail.model_validate(lead)
+    return LeadDetail.model_validate(lead, from_attributes=True)
 
 
-@router.post(
-    "/bulk/recalculate-scores",
-    response_model=SuccessResponse,
-    summary="Recalculate all scores",
-    description="Recalculate scores for all leads"
-)
+@router.post("/bulk/recalculate-scores", response_model=SuccessResponse)
 async def recalculate_all_scores(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Recalculate all lead scores"""
     
-    result = await db.execute(
-        select(Lead).where(Lead.user_id == current_user.id)
-    )
+    result = await db.execute(select(Lead).where(Lead.user_id == current_user.id))
     leads = result.scalars().all()
     
-    # Recalculate scores
     scoring_service = ScoringService()
-    
     for lead in leads:
         lead.propensity_score = scoring_service.calculate_score(lead)
         lead.update_priority_tier()
     
     await db.commit()
-    
-    # Update ranks
     await update_lead_ranks(current_user.id, db)
     
     return SuccessResponse(
@@ -552,19 +507,14 @@ async def recalculate_all_scores(
 
 
 # ============================================================================
-# HELPER FUNCTIONS
+# HELPER
 # ============================================================================
 
 async def update_lead_ranks(user_id: UUID, db: AsyncSession):
-    """Update rank for all user's leads based on propensity_score"""
+    """Update ranks based on score"""
     result = await db.execute(
-        select(Lead)
-        .where(Lead.user_id == user_id)
-        .order_by(Lead.propensity_score.desc())
+        select(Lead).where(Lead.user_id == user_id).order_by(Lead.propensity_score.desc())
     )
-    leads = result.scalars().all()
-    
-    for rank, lead in enumerate(leads, start=1):
+    for rank, lead in enumerate(result.scalars().all(), start=1):
         lead.rank = rank
-    
     await db.commit()
