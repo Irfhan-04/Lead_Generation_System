@@ -118,22 +118,6 @@ Expected response:
 
 ---
 
-## 🧪 TESTING WITH POSTMAN
-
-### Setup Postman Collection
-
-1. **Import OpenAPI Spec**
-   - Go to Postman
-   - Click "Import"
-   - Enter URL: `http://localhost:8000/api/v1/openapi.json`
-   - Click "Import"
-
-2. **Create Environment**
-   - Name: "Biotech Lead Gen - Local"
-   - Variables:
-     - `base_url`: `http://localhost:8000/api/v1`
-     - `access_token`: (leave empty for now)
-
 ### Test Flow:
 
 #### 1. Register User
