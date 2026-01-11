@@ -18,41 +18,6 @@ Transforming the demo into a production SaaS product across 12 weeks.
 ### Tasks
 
 #### Day 1-2: Project Restructure
-```
-biotech-lead-generator/
-├── frontend/              # NEW: Next.js app
-├── backend/              # NEW: FastAPI app
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── v1/
-│   │   │   │   ├── auth.py
-│   │   │   │   ├── leads.py
-│   │   │   │   ├── search.py
-│   │   │   │   └── export.py
-│   │   ├── core/
-│   │   │   ├── config.py
-│   │   │   ├── security.py
-│   │   │   └── database.py
-│   │   ├── models/
-│   │   │   ├── user.py
-│   │   │   ├── lead.py
-│   │   │   └── search.py
-│   │   ├── schemas/
-│   │   │   ├── user.py
-│   │   │   ├── lead.py
-│   │   │   └── search.py
-│   │   ├── services/
-│   │   │   ├── scoring.py
-│   │   │   ├── enrichment.py
-│   │   │   └── pubmed.py
-│   │   └── main.py
-│   ├── tests/
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── docker-compose.yml
-├── shared/               # Shared utilities
-└── infrastructure/       # Deployment configs
-```
 
 #### Day 3-4: Supabase Setup
 - [ ] Create Supabase project
@@ -570,16 +535,3 @@ As you build, learn from:
 - **SaaS:** Indie Hackers, SaaS Academy
 
 ---
-
-## Next Step: Start Phase 2.1
-
-Ready to begin? Let's start with **Phase 2.1: Backend API Foundation**.
-
-I'll provide you with:
-1. Complete FastAPI project structure
-2. Supabase setup guide
-3. Authentication implementation
-4. Core API endpoints
-5. Docker configuration
-
-Shall we begin with the backend setup? 🚀
